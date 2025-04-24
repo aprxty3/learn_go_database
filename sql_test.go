@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -144,4 +145,57 @@ func TestExecSqlSafe(t *testing.T) {
 		panic(err)
 	}
 	fmt.Println("Success insert data")
+}
+
+func TestAutoIncrement(t *testing.T) {
+	db := GetConnection()
+	defer db.Close()
+
+	email := "aji@gmail.com"
+	comment := "wkwkwkwkwk begitu"
+	ctx := context.Background()
+	script := "INSERT INTO comment (email, comment) values (?, ?)"
+
+	result, err := db.ExecContext(ctx, script, email, comment)
+	if err != nil {
+		panic(err)
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Your ID is", id)
+}
+
+func TestPrepareStatement(t *testing.T) {
+	db := GetConnection()
+	defer db.Close()
+
+	ctx := context.Background()
+	script := "insert into comment (email, comment) values (?,?)"
+
+	stmt, err := db.PrepareContext(ctx, script)
+	if err != nil {
+		panic(err)
+	}
+	defer stmt.Close()
+
+	for i := 0; i < 10; i++ {
+		email := "aji" + strconv.Itoa(i) + "@gmail.com"
+		comment := "wkwkwkwkwk begitu" + strconv.Itoa(i)
+
+		result, err := stmt.ExecContext(ctx, email, comment)
+		if err != nil {
+			panic(err)
+		}
+
+		id, err := result.LastInsertId()
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println("Your ID is", id)
+	}
 }
