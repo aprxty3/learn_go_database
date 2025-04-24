@@ -73,3 +73,75 @@ func TestQueryComplex(t *testing.T) {
 		fmt.Println("id:", id, "name:", name, "email:", email, "balance:", balance, "rating:", rating, "birth_date:", birth_date, "married:", married, "created_at:", created_at)
 	}
 }
+
+func TestQueryInjection(t *testing.T) {
+	db := GetConnection()
+	defer db.Close()
+
+	ctx := context.Background()
+	username := "admin'; #"
+	password := "salah"
+
+	script := "select username from authentification where username= '" + username + "' and password='" + password + "' limit 1"
+
+	rows, err := db.QueryContext(ctx, script)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		var username string
+		err := rows.Scan(&username)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("sukses login:", username)
+	} else {
+		fmt.Println("gagal login")
+	}
+}
+
+func TestQueryInjectionSafe(t *testing.T) {
+	db := GetConnection()
+	defer db.Close()
+
+	ctx := context.Background()
+	username := "admin"
+	password := "admin"
+
+	script := "select username from authentification where username= ? and password=? limit 1"
+
+	rows, err := db.QueryContext(ctx, script, username, password)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		var username string
+		err := rows.Scan(&username)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("sukses login:", username)
+	} else {
+		fmt.Println("gagal login")
+	}
+}
+
+func TestExecSqlSafe(t *testing.T) {
+	db := GetConnection()
+	defer db.Close()
+
+	username := "ajii"
+	password := "jium"
+	ctx := context.Background()
+	script := "INSERT INTO authentification (username, password) values (?, ?)"
+
+	_, err := db.ExecContext(ctx, script, username, password)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Success insert data")
+}
